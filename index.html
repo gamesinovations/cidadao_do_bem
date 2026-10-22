@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jornada Verde e Amarela</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: #0b0b0b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* Container Responsivo */
+        #game-container {
+            width: 100%;
+            max-width: 440px;
+            height: 100vh;
+            max-height: 900px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 60%, #90EE90 60%, #556B2F 100%);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 25px rgba(0,0,0,0.85);
+        }
+
+        @media (min-width: 461px) {
+            #game-container {
+                height: 90vh;
+                border-radius: 16px;
+                border: 4px solid #333;
+            }
+        }
+
+        /* Telas */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 20px;
+            z-index: 10;
+            transition: opacity 0.4s ease;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Cenário Superior Proporcional */
+        #scene-viewport {
+            width: 100%;
+            height: 30vh;
+            min-height: 170px;
+            position: relative;
+            background: linear-gradient(to bottom, #4682B4 0%, #87CEEB 70%, #228B22 70%, #006400 100%);
+            overflow: hidden;
+            border-bottom: 4px solid #fff;
+            flex-shrink: 0;
+        }
+
+        /* Sol */
+        .sun {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            width: 42px;
+            height: 42px;
+            background: #ffeb3b;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #ffeb3b;
+        }
+
+        /* Nuvens Animadas */
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 50px;
+            animation: move-cloud linear infinite;
+        }
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 50%;
+        }
+        .c1 { width: 60px; height: 20px; top: 20px; left: -70px; animation-duration: 18s; }
+        .c1::before { width: 25px; height: 25px; top: -12px; left: 10px; }
+        .c1::after { width: 30px; height: 30px; top: -15px; left: 25px; }
+
+        .c2 { width: 50px; height: 16px; top: 48px; left: -60px; animation-duration: 24s; animation-delay: 5s; }
+        .c2::before { width: 20px; height: 20px; top: -10px; left: 8px; }
+        .c2::after { width: 24px; height: 24px; top: -12px; left: 20px; }
+
+        @keyframes move-cloud {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(520px); }
+        }
+
+        /* Aves Voando no Horizonte */
+        .birds {
+            position: absolute;
+            top: 55px;
+            left: -40px;
+            font-size: 14px;
+            color: #222;
+            letter-spacing: 6px;
+            animation: fly-birds 12s linear infinite;
+        }
+        @keyframes fly-birds {
+            0% { transform: translateX(0) translateY(0); opacity: 0.7; }
+            50% { transform: translateX(250px) translateY(-8px); opacity: 0.95; }
+            100% { transform: translateX(520px) translateY(0); opacity: 0.7; }
+        }
+
+        /* Estrada Cinza Clara */
+        .road {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 45px;
+            background-color: #dcdcdc;
+            border-top: 3px dashed #fff;
+            border-bottom: 3px solid #bbb;
+        }
+
+        /* Placa "Democracia" */
+        #democracy-sign {
+            position: absolute;
+            bottom: 35px;
+            right: 35px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+        }
+        .sign-board {
+            background-color: #fff;
+            border: 2px solid #333;
+            padding: 3px 8px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #003366;
+            border-radius: 3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+        .sign-post {
+            width: 4px;
+            height: 25px;
+            background-color: #8B4513;
+        }
+
+        /* Personagem Centralizado com Transição de Tamanho e Posição */
+        #character {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%) scale(1);
+            width: 45px;
+            height: 70px;
+            transition: transform 0.4s ease-in-out, left 0.4s ease-in-out;
+            transform-origin: bottom center;
+        }
+
+        .char-head {
+            position: absolute;
+            top: 0;
+            left: 12px;
+            width: 18px;
+            height: 18px;
+            background-color: #ffdbac;
+            border-radius: 50%;
+            border: 2px solid #2e7d32;
+        }
+
+        .char-body {
+            position: absolute;
+            top: 17px;
+            left: 10px;
+            width: 22px;
+            height: 28px;
+            background-color: #009900; /* Verde */
+            border-radius: 6px;
+        }
+        .char-body::after {
+            content: '';
+            position: absolute;
+            top: 7px;
+            left: 4px;
+            width: 14px;
+            height: 14px;
+            background-color: #ffcc00; /* Detalhe Amarelo */
+            border-radius: 50%;
+        }
+
+        /* Bandeira Verde e Amarela nas Mãos */
+        .flag {
+            position: absolute;
+            top: 15px;
+            right: -16px;
+            width: 22px;
+            height: 15px;
+            background: linear-gradient(to bottom, #009900 50%, #ffcc00 50%);
+            border-left: 2px solid #555;
+            animation: wave-flag 0.6s infinite alternate ease-in-out;
+            transform-origin: left center;
+        }
+        @keyframes wave-flag {
+            0% { transform: skewY(0deg) scaleX(1); }
+            100% { transform: skewY(-8deg) scaleX(0.9); }
+        }
+
+        /* Membros com animação de caminhada fluida */
+        .limb {
+            position: absolute;
+            background-color: #003366;
+            border-radius: 3px;
+        }
+
+        .arm-left {
+            top: 19px; left: 4px; width: 5px; height: 18px;
+            transform-origin: top center;
+            animation: swing-arm 0.4s infinite alternate ease-in-out;
+        }
+        .arm-right {
+            top: 19px; left: 24px; width: 5px; height: 18px;
+            transform-origin: top center;
+            animation: swing-arm 0.4s infinite alternate-reverse ease-in-out;
+        }
+
+        .leg-left {
+            top: 44px; left: 11px; width: 6px; height: 20px;
+            transform-origin: top center;
+            animation: swing-leg 0.4s infinite alternate ease-in-out;
+        }
+        .leg-right {
+            top: 44px; left: 20px; width: 6px; height: 20px;
+            transform-origin: top center;
+            animation: swing-leg 0.4s infinite alternate-reverse ease-in-out;
+        }
+
+        @keyframes swing-arm {
+            0% { transform: rotate(-22deg); }
+            100% { transform: rotate(22deg); }
+        }
+        @keyframes swing-leg {
+            0% { transform: rotate(-28deg); }
+            100% { transform: rotate(28deg); }
+        }
+
+        /* Caixa de Perguntas */
+        #quiz-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            width: 100%;
+            overflow-y: auto;
+        }
+
+        #question-counter {
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        #question-text {
+            font-size: clamp(17px, 4vw, 21px);
+            font-weight: 700;
+            color: #111;
+            margin-bottom: 20px;
+            line-height: 1.35;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .btn-option {
+            background: linear-gradient(to bottom, #4CAF50, #2E7D32);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.1s, background 0.2s;
+            text-align: left;
+        }
+
+        .btn-option:active {
+            transform: scale(0.97);
+        }
+
+        .btn-option:nth-child(2) {
+            background: linear-gradient(to bottom, #FF9800, #E65100);
+        }
+
+        /* Telas de Fim e Resultados */
+        .end-screen {
+            background-color: #111;
+            color: #fff;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .end-screen.joyful {
+            background: linear-gradient(to bottom, #2e7d32, #1b5e20);
+        }
+
+        .end-message {
+            font-size: clamp(22px, 5vw, 26px);
+            font-weight: bold;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+
+        .symbol-prohibited {
+            font-size: 70px;
+            margin-bottom: 20px;
+            border: 4px solid #fff;
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff3333;
+            background: #000;
+        }
+
+        /* Tela Final Obrigatória "Vote 13" */
+        #vote13-screen {
+            background-color: #cc0000;
+            color: #ffffff;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #vote13-screen h1 {
+            font-size: clamp(56px, 14vw, 72px);
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.4);
+            margin: 20px 0;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        .btn-start {
+            background-color: #ffcc00;
+            color: #111;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 16px 36px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        
+        <!-- TELA DE INÍCIO -->
+        <div id="screen-start" class="screen" style="background: linear-gradient(to bottom, #1e3c72, #2a5298); color: white; justify-content: center;">
+            <div style="font-size: 55px; margin-bottom: 10px;">🇧🇷</div>
+            <h1 style="font-size: 28px; margin-bottom: 15px; text-align: center;">Jornada Verde e Amarela</h1>
+            <p style="font-size: 16px; margin-bottom: 30px; text-align: center; opacity: 0.9; max-width: 320px;">Caminhe em direção à democracia e tome decisões cruciais para o futuro do país!</p>
+            <button class="btn-start" onclick="startGame()">Iniciar Jornada</button>
+        </div>
+
+        <!-- TELA DE JOGO / PERGUNTAS -->
+        <div id="screen-game" class="screen hidden" style="padding: 0;">
+            <!-- Cenário Superior com Estrada, Placa Democracia, Nuvens, Aves e Personagem Centralizado -->
+            <div id="scene-viewport">
+                <div class="sun"></div>
+                <div class="cloud c1"></div>
+                <div class="cloud c2"></div>
+                <div class="birds">🐦 🕊️ 🦅</div>
+                <div class="road"></div>
+                
+                <!-- Placa Democracia -->
+                <div id="democracy-sign">
+                    <div class="sign-board">DEMOCRACIA</div>
+                    <div class="sign-post"></div>
+                </div>
+
+                <!-- Personagem -->
+                <div id="character">
+                    <div class="char-head"></div>
+                    <div class="char-body">
+                        <div class="flag"></div>
+                    </div>
+                    <div class="limb arm-left"></div>
+                    <div class="limb arm-right"></div>
+                    <div class="limb leg-left"></div>
+                    <div class="limb leg-right"></div>
+                </div>
+            </div>
+
+            <!-- Caixa de Perguntas -->
+            <div id="quiz-box">
+                <div id="question-counter">Pergunta 1 de 20</div>
+                <div id="question-text">Carregando pergunta...</div>
+                <div class="options-container">
+                    <button class="btn-option" id="btn-a" onclick="answerQuestion('a')">A) Sim</button>
+                    <button class="btn-option" id="btn-b" onclick="answerQuestion('b')">B) Não</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA DE RESULTADO INTERMEDIÁRIO -->
+        <div id="screen-result" class="screen hidden">
+            <div id="result-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%;"></div>
+        </div>
+
+        <!-- TELA FINAL OBRIGATÓRIA "VOTE 13" -->
+        <div id="vote13-screen" class="screen hidden">
+            <div style="font-size: 45px;">⭐ 🇧🇷 ⭐</div>
+            <h1>Vote 13</h1>
+            <p style="font-size: 20px; font-weight: bold; margin-top: 10px; max-width: 320px;">O futuro em suas mãos com esperança e alegria!</p>
+            <button class="btn-start" onclick="resetGame()" style="margin-top: 30px;">Jogar Novamente</button>
+        </div>
+
+    </div>
+
+    <script>
+        const questions = [
+            { text: "Você é a favor do Comando Vermelho e da Milícia do RJ terem influência direta na presidência da república?", a: "A) Sim", b: "B) Não" },
+            { text: "Você concorda com a exploração do Brasil pelos EUA?", a: "A) Sim", b: "B) Não" },
+            { text: "Você é a favor de orgias com menores de idade refugiadas de guerra?", a: "A) Sim", b: "B) Não" },
+            { text: "Você é a favor da Polícia Federal não investigar nenhum político corrupto?", a: "A) Sim", b: "B) Não" },
+            { text: "Você concorda com a perseguição à Igreja Católica?", a: "A) Sim", b: "B) Não" },
+            { text: "Você concorda com a perseguição ao direito de professar uma fé, só porque pensa diferente?", a: "A) Sim", b: "B) Não" },
+            { text: "Você concorda em vender estatais com desconto de 90% para o estrangeiro?", a: "A) Sim", b: "B) Não" },
+            { text: "Você concorda com a livre exploração dos recursos naturais do Brasil por outros países?", a: "A) Sim", b: "B) Não" },
+            { text: "Você é a favor de crianças terem acesso a armas de fogo, podendo causar até mesmo mortes acidentais?", a: "A) Sim", b: "B) Não" },
+            { text: "Você é a favor que Daniel Vorcaro do Banco Master seja inocentado?", a: "A) Sim", b: "B) Não" },
+            { text: "Você é a favor de políticos bancarem regalias eróticas a ministros do STF em troca de favores?", a: "A) Sim", b: "B) Não" },
+            { text: "Você concorda com a venda de empresas como a Petrobras, que gera muitos empregos e lucro?", a: "A) Sim", b: "B) Não" },
+            { text: "Você concorda que um presidente seja eleito sem propostas?", a: "A) Sim", b: "B) Não" },
+            { text: "Você acha justo que o salário mínimo não tenha aumento acima da inflação?", a: "A) Sim", b: "B) Não" },
+            { text: "You acha justo se aposentar só com 70 anos?", a: "A) Sim", b: "B) Não" },
+            { text: "Você acha justo o valor da aposentadoria não receber reajuste?", a: "A) Sim", b: "B) Não" },
+            { text: "Você acha justo o SUS não oferecer mais tratamentos e vacinação gratuitos?", a: "A) Sim", b: "B) Não" },
+            { text: "Você é a favor da diminuição de 90% do orçamento das universidades e institutos federais?", a: "A) Sim", b: "B) Não" },
+            { text: "Você é a favor da diminuição do orçamento da farmácia popular?", a: "A) Sim", b: "B) Não" },
+            { text: "Você apoia políticas que reduzem o investimento público em saneamento básico e saúde?", a: "A) Sim", b: "B) Não" }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score13 = 0; 
+        let score22 = 0; 
+        let characterScale = 1; 
+        let characterOffset = 0; 
+
+        const screenStart = document.getElementById('screen-start');
+        const screenGame = document.getElementById('screen-game');
+        const screenResult = document.getElementById('screen-result');
+        const screenVote13 = document.getElementById('vote13-screen');
+
+        const questionCounter = document.getElementById('question-counter');
+        const questionText = document.getElementById('question-text');
+        const btnA = document.getElementById('btn-a');
+        const btnB = document.getElementById('btn-b');
+        const character = document.getElementById('character');
+
+        function startGame() {
+            currentQuestionIndex = 0;
+            score13 = 0;
+            score22 = 0;
+            characterScale = 1;
+            characterOffset = 0;
+            updateCharacterTransform();
+
+            screenStart.classList.add('hidden');
+            screenResult.classList.add('hidden');
+            screenVote13.classList.add('hidden');
+            screenGame.classList.remove('hidden');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const q = questions[currentQuestionIndex];
+                questionCounter.innerText = `Pergunta ${currentQuestionIndex + 1} de ${questions.length}`;
+                questionText.innerText = q.text;
+                btnA.innerText = q.a;
+                btnB.innerText = q.b;
+            } else {
+                showFinalResult();
+            }
+        }
+
+        function answerQuestion(choice) {
+            if (choice === 'a') {
+                score22++;
+                characterScale = Math.max(0.65, characterScale - 0.035);
+                characterOffset = Math.max(-45, characterOffset - 12);
+            } else {
+                score13++;
+                characterScale = Math.min(1.45, characterScale + 0.035);
+                characterOffset = Math.min(45, characterOffset + 12);
+            }
+
+            updateCharacterTransform();
+
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        function updateCharacterTransform() {
+            character.style.left = `calc(50% + ${characterOffset}px)`;
+            character.style.transform = `translateX(-50%) scale(${characterScale})`;
+        }
+
+        function showFinalResult() {
+            screenGame.classList.add('hidden');
+            screenResult.classList.remove('hidden');
+
+            const resultContent = document.getElementById('result-content');
+            resultContent.innerHTML = '';
+
+            let messageDiv = document.createElement('div');
+            messageDiv.style.padding = "20px";
+            messageDiv.style.textAlign = "center";
+            messageDiv.style.display = "flex";
+            messageDiv.style.flexDirection = "column";
+            messageDiv.style.alignItems = "center";
+            messageDiv.style.justifyContent = "center";
+
+            if (score13 > score22) {
+                screenResult.className = "screen end-screen joyful";
+                messageDiv.innerHTML = `
+                    <div style="font-size: 60px; margin-bottom: 15px;">🎉 🇧🇷 ✨</div>
+                    <div class="end-message">"Parabéns, você é um verdadeiro cidadão de bem"</div>
+                `;
+            } else if (score22 > score13) {
+                screenResult.className = "screen end-screen";
+                messageDiv.innerHTML = `
+                    <div class="symbol-prohibited">Ø</div>
+                    <div class="end-message" style="color: #fff;">"Você precisa reavaliar seus conceitos! Isso não demonstra um bom caráter."</div>
+                `;
+            } else {
+                screenResult.className = "screen end-screen";
+                messageDiv.innerHTML = `
+                    <div class="symbol-prohibited">Ø</div>
+                    <div class="end-message" style="color: #fff;">"Você precisa pensar mais nos que você ama !"</div>
+                `;
+            }
+
+            let nextBtn = document.createElement('button');
+            nextBtn.className = "btn-start";
+            nextBtn.innerText = "Continuar";
+            nextBtn.onclick = showVote13Screen;
+
+            messageDiv.appendChild(nextBtn);
+            resultContent.appendChild(messageDiv);
+        }
+
+        function showVote13Screen() {
+            screenResult.classList.add('hidden');
+            screenVote13.classList.remove('hidden');
+        }
+
+        function resetGame() {
+            screenVote13.classList.add('hidden');
+            screenStart.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
